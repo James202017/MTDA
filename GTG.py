@@ -1,27 +1,39 @@
-import telegram
-from gemini import Gemini
+import requests
+from bs4 import BeautifulSoup
+import telebot
+import schedule
+import time
 
-# Замените 'YOUR_TELEGRAM_BOT_TOKEN' на токен вашего Telegram бота
-bot_token = '7216405294:AAG1i86SbGAvtFvr-PJvnxjxsjalUpWd6EI'
+TOKEN = '7865974744:AAHp8T_HpOaQLgmrqAypOF1Q0AKwx8gisCQ'
+CHANNEL_ID = '@SekretyNedvizhimosti'
+NEWS_URL = 'https://realty.rbc.ru/'
 
-# Замените 'YOUR_GEMINI_API_KEY' на ваш API ключ Gemini
-gemini_api_key = 'AIzaSyCwDMWH-Hhp5DsK2Mcan4rsgWtOJ_3_5LU'
+def get_latest_news():
+    response = requests.get(NEWS_URL)
+    soup = BeautifulSoup(response.text, 'html.parser')
+    articles = soup.find_all('a', class_='item__link', limit=3)
+    news_list = []
+    for article in articles:
+        title = article.get_text(strip=True)
+        link = article['href']
+        if not link.startswith('http'):
+            link = 'https://realty.rbc.ru' + link
+        news_list.append(f"{title}\n{link}")
+    return "\n\n".join(news_list)
 
-# Создаем экземпляры бота Telegram и Gemini
-bot = telegram.Bot(token=bot_token)
-gemini = Gemini(api_key=gemini_api_key)
+def publish_news(time_slot):
+    bot = telebot.TeleBot(TOKEN)
+    news = get_latest_news()
+    message = f"Новости недвижимости ({time_slot}):\n\n{news}"
+    bot.send_message(CHANNEL_ID, message)
 
-# Обработчик сообщений
-def handle_message(update, context):
-    message = update.message.text
-    response = gemini.generate_text(message)
-    bot.send_message(chat_id=update.effective_chat.id, text=response)
+def main():
+    schedule.every().day.at("09:00").do(publish_news, "утро")
+    schedule.every().day.at("15:00").do(publish_news, "день")
+    schedule.every().day.at("21:00").do(publish_news, "вечер")
+    while True:
+        schedule.run_pending()
+        time.sleep(60)
 
-# Запускаем обработчик сообщений
-updater = telegram.ext.Updater(token=bot_token, use_context=True)
-dispatcher = updater.dispatcher
-dispatcher.add_handler(telegram.ext.MessageHandler(telegram.ext.Filters.text & (~telegram.ext.Filters.command), handle_message))
-
-# Запускаем бота
-updater.start_polling()
-updater.idle()
+if __name__ == "__main__":
+    main()
