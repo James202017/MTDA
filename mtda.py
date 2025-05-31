@@ -1,14 +1,24 @@
-from aiogram import Bot, Dispatcher, executor, types
-from aiogram.types.web_app_info import WebAppInfo
+import asyncio
+from aiogram import Bot, Dispatcher, types
+from aiogram. filters import CommandStart
 
-bot = Bot('7216405294:AAG1i86SbGAvtFvr-PJvnxjxsjalUpWd6EI')
-dp = Dispatcher(bot)
+bot = Bot(token="7767247685:AAGe_5RK-bmZ49yqnigNxncbgcFjMoo8Ahs")
+dp = Dispatcher()
 
-@dp.message_handler(commands=['start'])
-async def start(message: types. Message) :
-    markup = types.ReplyKeyboardMarkup ()
-    markup.add(types.KeyboardButton('Открыть веб страницу', web_app=WebAppInfo (https://google.com)))
-    await massage.answer('Добро пожаловать на этот сайт!', reply_markup=marcup)
-
-
-executor.start_polling(dp)
+@dp . message (CommandStart())
+async def start_cmd(message: types.Message) -> None:
+    await message. answer ( 'Это была команда старт')
+@dp . message()
+async def echo(message: types.Message) -> None:
+    text: str | None = message.text
+    if text in ('Привет' , 'привет', 'hi', 'hello'):
+        await message. answer("И тебе привет!")
+    elif text in ('Пока', 'пока', 'пакеда', 'До свидания'):
+        await message. answer("И тебе привет!")
+    else:
+        await message.answer(message.text)
+        
+async def main() -> None:
+    await dp.start_polling(bot)
+    
+asyncio.run(main())
